@@ -1,12 +1,17 @@
 package com.jeff.utils;
 
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.jeff.exception.BadRequestException;
+import com.jeff.utils.enums.DataScopeEnum;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+
+import java.util.List;
 
 public class SecurityUtils {
     /**
@@ -43,4 +48,5 @@ public class SecurityUtils {
         UserDetails userDetails = getCurrentUser();
         return new JSONObject(new JSONObject(userDetails).get("user")).get("id", Long.class);
     }
+
 }
