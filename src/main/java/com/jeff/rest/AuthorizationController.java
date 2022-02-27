@@ -6,8 +6,10 @@ import com.jeff.service.dto.AuthUserDto;
 import com.jeff.service.dto.JwtUserDto;
 import com.jeff.utils.RedisUtils;
 import com.jeff.utils.RsaUtils;
+import com.jeff.utils.SecurityUtils;
 import com.wf.captcha.ArithmeticCaptcha;
 import com.wf.captcha.base.Captcha;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -58,6 +60,12 @@ public class AuthorizationController {
             put("user", jwtUserDto);
         }};
         return ResponseEntity.ok(authInfo);
+    }
+
+    @ApiOperation("获取用户信息")
+    @GetMapping(value = "/info")
+    public ResponseEntity<Object> getUserInfo() {
+        return ResponseEntity.ok(SecurityUtils.getCurrentUser());
     }
 
     @GetMapping(value = "/code")
