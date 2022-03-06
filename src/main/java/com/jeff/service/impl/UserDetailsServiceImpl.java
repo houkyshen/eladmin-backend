@@ -1,5 +1,6 @@
 package com.jeff.service.impl;
 
+import com.jeff.service.DataService;
 import com.jeff.service.RoleService;
 import com.jeff.service.UserService;
 import com.jeff.service.dto.JwtUserDto;
@@ -16,13 +17,16 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     UserService userService;
     @Autowired
     RoleService roleService;
+    @Autowired
+    DataService dataService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserDto user = userService.findByName(username);
         JwtUserDto jwtUserDto = new JwtUserDto(
                 user,
-                null,
+                //获取当前用户的数据权限，并进行授权
+                dataService.getDeptIds(user),
                 //获取当前用户的权限，并进行授权
                 roleService.mapToGrantedAuthorities(user)
         );
