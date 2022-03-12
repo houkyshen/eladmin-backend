@@ -23,103 +23,91 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@CacheConfig(cacheNames = "menu")
 public class MenuServiceImpl implements MenuService {
 
     private final MenuRepository menuRepository;
     private final MenuMapper menuMapper;
     private final RoleService roleService;
 
-
     /**
-     * 用户角色改变时需清理缓存
+     * 获取用户能看到的菜单
+     *
      * @param currentUserId /
-     * @return /
+     * @return
      */
     @Override
-    @Cacheable(key = "'user:' + #p0")
     public List<MenuDto> findByUser(Long currentUserId) {
+        //获取当前登录用户的所有角色
         List<RoleSmallDto> roles = roleService.findByUsersId(currentUserId);
+        //把角色集合转化成角色id集合
         Set<Long> roleIds = roles.stream().map(RoleSmallDto::getId).collect(Collectors.toSet());
+        //根据角色查询能看到的菜单，并且菜单类型不能为2,类型为2的菜单是具体权限或者说是按钮，如用户新增、编辑、删除等；
         LinkedHashSet<Menu> menus = menuRepository.findByRoleIdsAndTypeNot(roleIds, 2);
         return menus.stream().map(menuMapper::toDto).collect(Collectors.toList());
     }
 
 
+    /**
+     * 构建菜单树
+     *
+     * @param menuDtos 用户能看到的菜单集合
+     * @return
+     */
     @Override
     public List<MenuDto> buildTree(List<MenuDto> menuDtos) {
-        List<MenuDto> trees = new ArrayList<>();
-        Set<Long> ids = new HashSet<>();
-        for (MenuDto menuDTO : menuDtos) {
+        List<MenuDto> trees = new ArrayList<>();//顶层菜单的集合
+        Set<Long> ids = new HashSet<>();//子菜单id的集合，避免重复所以使用Set而不是List
+        for (MenuDto menuDTO : menuDtos) {//遍历用户能看到的每个菜单
+            //如果没有上级菜单，代表是一级菜单，添加进trees里面
             if (menuDTO.getPid() == null) {
                 trees.add(menuDTO);
             }
-            for (MenuDto it : menuDtos) {
-                if (menuDTO.getId().equals(it.getPid())) {
+            for (MenuDto child : menuDtos) {//再次遍历用户能看到的每个菜单
+                //找出menuDTO的下级菜单
+                if (menuDTO.getId().equals(child.getPid())) {
                     if (menuDTO.getChildren() == null) {
                         menuDTO.setChildren(new ArrayList<>());
                     }
-                    menuDTO.getChildren().add(it);
-                    ids.add(it.getId());
+                    menuDTO.getChildren().add(child);
+                    ids.add(child.getId());
                 }
             }
         }
-        if(trees.size() == 0){
+        if (trees.size() == 0) {//如果该用户一个顶级菜单都没权限看
+            //在用户能看到的菜单集合里面筛选出所有非子菜单，意思就是一级菜单没有，就显示二级菜单，以此类推
             trees = menuDtos.stream().filter(s -> !ids.contains(s.getId())).collect(Collectors.toList());
         }
         return trees;
     }
 
+    /**
+     * 完成从menuDTO到menuVO的转化
+     *
+     * @param menuDtos 已经是菜单树
+     * @return
+     */
     @Override
     public List<MenuVo> buildMenus(List<MenuDto> menuDtos) {
-        List<MenuVo> list = new LinkedList<>();
+        List<MenuVo> trees = new LinkedList<>();
         menuDtos.forEach(menuDTO -> {
-                    if (menuDTO!=null){
-                        List<MenuDto> menuDtoList = menuDTO.getChildren();
+                    if (menuDTO != null) {
                         MenuVo menuVo = new MenuVo();
-                        menuVo.setName(ObjectUtil.isNotEmpty(menuDTO.getComponentName())  ? menuDTO.getComponentName() : menuDTO.getTitle());
+                        menuVo.setName(ObjectUtil.isNotEmpty(menuDTO.getComponentName()) ? menuDTO.getComponentName() : menuDTO.getTitle());
                         // 一级目录需要加斜杠，不然会报警告
-                        menuVo.setPath(menuDTO.getPid() == null ? "/" + menuDTO.getPath() :menuDTO.getPath());
+                        menuVo.setPath(menuDTO.getPid() == null ? "/" + menuDTO.getPath() : menuDTO.getPath());
                         menuVo.setHidden(menuDTO.getHidden());
-                        // 如果不是外链
-                        if(!menuDTO.getIFrame()){
-                            if(menuDTO.getPid() == null){
-                                menuVo.setComponent(StringUtils.isEmpty(menuDTO.getComponent())?"Layout":menuDTO.getComponent());
-                                // 如果不是一级菜单，并且菜单类型为目录，则代表是多级菜单
-                            }else if(menuDTO.getType() == 0){
-                                menuVo.setComponent(StringUtils.isEmpty(menuDTO.getComponent())?"ParentView":menuDTO.getComponent());
-                            }else if(StringUtils.isNoneBlank(menuDTO.getComponent())){
-                                menuVo.setComponent(menuDTO.getComponent());
-                            }
-                        }
-                        menuVo.setMeta(new MenuMetaVo(menuDTO.getTitle(),menuDTO.getIcon(),!menuDTO.getCache()));
-                        if(CollectionUtil.isNotEmpty(menuDtoList)){
+                        menuVo.setMeta(new MenuMetaVo(menuDTO.getTitle(), menuDTO.getIcon(), !menuDTO.getCache()));
+                        //处理子菜单
+                        List<MenuDto> menuDtoList = menuDTO.getChildren();
+                        if (CollectionUtil.isNotEmpty(menuDtoList)) {
                             menuVo.setAlwaysShow(true);
                             menuVo.setRedirect("noredirect");
                             menuVo.setChildren(buildMenus(menuDtoList));
-                            // 处理是一级菜单并且没有子菜单的情况
-                        } else if(menuDTO.getPid() == null){
-                            MenuVo menuVo1 = new MenuVo();
-                            menuVo1.setMeta(menuVo.getMeta());
-                            // 非外链
-                            if(!menuDTO.getIFrame()){
-                                menuVo1.setPath("index");
-                                menuVo1.setName(menuVo.getName());
-                                menuVo1.setComponent(menuVo.getComponent());
-                            } else {
-                                menuVo1.setPath(menuDTO.getPath());
-                            }
-                            menuVo.setName(null);
-                            menuVo.setMeta(null);
-                            menuVo.setComponent("Layout");
-                            List<MenuVo> list1 = new ArrayList<>();
-                            list1.add(menuVo1);
-                            menuVo.setChildren(list1);
                         }
-                        list.add(menuVo);
+                        trees.add(menuVo);
                     }
                 }
         );
-        return list;
+        return trees;
     }
 }

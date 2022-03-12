@@ -26,13 +26,15 @@ public class MenuController {
 //    }
 
     private final MenuService menuService;
-    private final MenuMapper menuMapper;
 
     @GetMapping(value = "/build")
     @ApiOperation("获取前端所需菜单")
     public ResponseEntity<Object> buildMenus(){
+        //获取当前登录用户所能看到的菜单列表，非树形列表
         List<MenuDto> menuDtoList = menuService.findByUser(SecurityUtils.getCurrentUserId());
+        //把获取回来的菜单列表转化成树形菜单列表
         List<MenuDto> menuDtos = menuService.buildTree(menuDtoList);
+        //把DTO转化成VO
         return new ResponseEntity<>(menuService.buildMenus(menuDtos),HttpStatus.OK);
     }
 }

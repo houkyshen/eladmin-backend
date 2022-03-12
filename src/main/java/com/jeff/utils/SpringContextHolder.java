@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 @Slf4j
+//需要在SpringBoot启动类中配置这个类，然后就会自动调用setApplicationContext方法
 public class SpringContextHolder implements ApplicationContextAware {
     private static ApplicationContext applicationContext = null;
     @Override
