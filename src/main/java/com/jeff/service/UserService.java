@@ -1,6 +1,7 @@
 package com.jeff.service;
 
 import com.jeff.service.dto.UserDto;
+import com.jeff.service.dto.UserQueryCriteria;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -8,10 +9,11 @@ import org.springframework.stereotype.Service;
 public interface UserService {
     /**
      * 根据用户名查询
+     *
      * @param userName /
      * @return /
      */
     UserDto findByName(String userName);
 
-    Object queryAll(Pageable pageable);
+    Object queryAll(UserQueryCriteria userQueryCriteria, Pageable pageable);
 }

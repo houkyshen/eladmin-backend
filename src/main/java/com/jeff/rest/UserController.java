@@ -2,6 +2,7 @@ package com.jeff.rest;
 
 
 import com.jeff.service.UserService;
+import com.jeff.service.dto.UserQueryCriteria;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +22,7 @@ public class UserController {
     @ApiOperation("查询用户")
     @GetMapping
     @PreAuthorize("hasAnyAuthority('user:list','admin')")
-    public ResponseEntity<Object> queryUser(Pageable pageable) {
-        return new ResponseEntity<>(userService.queryAll(pageable), HttpStatus.OK);
+    public ResponseEntity<Object> queryUser(UserQueryCriteria userQueryCriteria, Pageable pageable) {
+        return new ResponseEntity<>(userService.queryAll(userQueryCriteria,pageable), HttpStatus.OK);
     }
 }

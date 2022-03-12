@@ -4,6 +4,7 @@ import com.jeff.domain.User;
 import com.jeff.repository.UserRepository;
 import com.jeff.service.UserService;
 import com.jeff.service.dto.UserDto;
+import com.jeff.service.dto.UserQueryCriteria;
 import com.jeff.service.mapstruct.UserMapper;
 import com.jeff.utils.PageUtil;
 import com.jeff.utils.QueryHelp;
@@ -20,9 +21,9 @@ public class UserServiceImpl implements UserService {
     UserMapper userMapper;
 
     @Override
-    public Object queryAll(Pageable pageable) {
+    public Object queryAll(UserQueryCriteria userQueryCriteria, Pageable pageable) {
         //这里findall方法的第一个参数是Specification，Specification是一个函数式接口，因为他只有一个抽象方法:toPredicate()，所以可以用lambda表达式去表示函数式接口
-        Page<User> page = userRepository.findAll(QueryHelp::getPredicate, pageable);
+        Page<User> page = userRepository.findAll((root, query, cb) -> QueryHelp.getPredicate(root, userQueryCriteria, cb), pageable);
         //以上代码等价于以下代码：
 //        Page<User> page = userRepository.findAll(new Specification<User>() {
 //            @Override
