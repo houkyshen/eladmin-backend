@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.jeff.exception.EntityExistException;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -38,6 +40,21 @@ public class UserServiceImpl implements UserService {
     public UserDto findByName(String userName) {
         User user = userRepository.findByUsername(userName);
         return userMapper.toDto(user);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void create(User resources) {
+        if (userRepository.findByUsername(resources.getUsername()) != null) {
+            throw new EntityExistException(User.class, "username", resources.getUsername());
+        }
+        if (userRepository.findByEmail(resources.getEmail()) != null) {
+            throw new EntityExistException(User.class, "email", resources.getEmail());
+        }
+        if (userRepository.findByPhone(resources.getPhone()) != null) {
+            throw new EntityExistException(User.class, "phone", resources.getPhone());
+        }
+        userRepository.save(resources);
     }
 
 }

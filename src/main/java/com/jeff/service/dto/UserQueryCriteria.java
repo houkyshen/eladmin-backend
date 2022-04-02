@@ -1,5 +1,6 @@
 package com.jeff.service.dto;
 
+import com.jeff.annotation.DataPermission;
 import com.jeff.annotation.Query;
 import lombok.Data;
 
@@ -9,6 +10,7 @@ import java.util.Set;
 
 
 @Data
+@DataPermission(fieldName = "id", joinName = "dept")
 //查询条件类，这个类的参数的具体值由前端传过来，如果这个类的属性名跟Pageable重复，则两个字段都会赋予同样的值
 public class UserQueryCriteria implements Serializable {
 

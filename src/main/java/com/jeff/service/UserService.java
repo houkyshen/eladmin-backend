@@ -1,5 +1,6 @@
 package com.jeff.service;
 
+import com.jeff.domain.User;
 import com.jeff.service.dto.UserDto;
 import com.jeff.service.dto.UserQueryCriteria;
 import org.springframework.data.domain.Pageable;
@@ -16,4 +17,10 @@ public interface UserService {
     UserDto findByName(String userName);
 
     Object queryAll(UserQueryCriteria userQueryCriteria, Pageable pageable);
+
+    /**
+     * 新增用户
+     * @param resources /
+     */
+    void create(User resources);
 }

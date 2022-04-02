@@ -49,7 +49,6 @@ public class SecurityUtils {
         return new JSONObject(new JSONObject(userDetails).get("user")).get("id", Long.class);
     }
 
-
     /**
      * 获取当前用户的数据权限
      * @return /
@@ -58,5 +57,18 @@ public class SecurityUtils {
         UserDetails userDetails = getCurrentUser();
         JSONArray array = JSONUtil.parseArray(new JSONObject(userDetails).get("dataScopes"));
         return JSONUtil.toList(array,Long.class);
+    }
+
+    /**
+     * 获取数据权限级别
+     * @return 级别
+     */
+    public static String getDataScopeType() {
+        List<Long> dataScopes = getCurrentUserDataScope();
+        //dataScopes里面的每个数字代表能看到的部门，如果为空，则代表可以看到所有部门数据
+        if(dataScopes.size() != 0){
+            return "";
+        }
+        return DataScopeEnum.ALL.getValue();
     }
 }

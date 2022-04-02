@@ -3,8 +3,10 @@ package com.jeff.utils;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.jeff.annotation.DataPermission;
 import com.jeff.annotation.Query;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.persistence.criteria.*;
 import java.lang.reflect.Field;
@@ -31,12 +33,27 @@ public class QueryHelp {
             return cb.and(list.toArray(new Predicate[0]));
         }
         // 获取数据权限，就是部门id的集合
-        List<Long> dataScopes = SecurityUtils.getCurrentUserDataScope();
-        if (CollectionUtil.isNotEmpty(dataScopes)) {
-            //root代表User，这里的join代表Dept
-            Join join = root.join("dept", JoinType.LEFT);
-            //添加条件：用户的部门id要在dataScopes里面，dataScopes指当前登录用户能看到的部门id集合
-            list.add(join.get("id").in(dataScopes));
+//        List<Long> dataScopes = SecurityUtils.getCurrentUserDataScope();
+//        if (CollectionUtil.isNotEmpty(dataScopes)) {
+//            //root代表User，这里的join代表Dept
+//            Join join = root.join("dept", JoinType.LEFT);
+//            //添加条件：用户的部门id要在dataScopes里面，dataScopes指当前登录用户能看到的部门id集合
+//            list.add(join.get("id").in(dataScopes));
+//        }
+
+        // 数据权限验证
+        DataPermission permission = queryCriteria.getClass().getAnnotation(DataPermission.class);
+        if (permission != null) {
+            // 获取数据权限
+            List<Long> dataScopes = SecurityUtils.getCurrentUserDataScope();
+            if (CollectionUtil.isNotEmpty(dataScopes)) {
+                if (StringUtils.isNotBlank(permission.joinName()) && StringUtils.isNotBlank(permission.fieldName())) {
+                    Join join = root.join(permission.joinName(), JoinType.LEFT);
+                    list.add(join.get("id").in(dataScopes));
+                } else if (StringUtils.isBlank(permission.joinName()) && StringUtils.isNotBlank(permission.fieldName())) {
+                    list.add(root.get("id").in(dataScopes));
+                }
+            }
         }
 
         try {
@@ -87,13 +104,20 @@ public class QueryHelp {
                         }
                     }
                     switch (q.type()) {
+                        case EQUAL:
+                            list.add(cb.equal(getExpression(attributeName, join, root)
+                                    .as((Class<? extends Comparable>) fieldType), valueFromFrontEnd));
+                            break;
+                        case IS_NULL:
+                            list.add(cb.isNull(getExpression(attributeName, join, root)));
+                            break;
                         case GREATER_THAN:
-                            list.add(cb.greaterThan(root.get(attributeName)
+                            list.add(cb.greaterThan(getExpression(attributeName, join, root)
                                     , (Comparable) valueFromFrontEnd));
                             break;
                         case IN:
                             if (CollUtil.isNotEmpty((Collection<Object>) valueFromFrontEnd)) {
-                                list.add(join.get(attributeName).in((Collection<Object>) valueFromFrontEnd));
+                                list.add(getExpression(attributeName, join, root).in((Collection<Object>) valueFromFrontEnd));
                             }
                             break;
                     }
@@ -104,5 +128,13 @@ public class QueryHelp {
             log.error(e.getMessage(), e);
         }
         return cb.and(list.toArray(new Predicate[0]));
+    }
+
+    private static <T, R> Expression<T> getExpression(String attributeName, Join join, Root<R> root) {
+        if (ObjectUtil.isNotEmpty(join)) {
+            return join.get(attributeName);
+        } else {
+            return root.get(attributeName);
+        }
     }
 }

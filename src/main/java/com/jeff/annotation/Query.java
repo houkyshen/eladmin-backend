@@ -36,6 +36,9 @@ public @interface Query {
         , GREATER_THAN
         //包含
         , IN
+        , INNER_LIKE
+        , BETWEEN
+        , IS_NULL
     }
 
     /**
