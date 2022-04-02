@@ -33,13 +33,13 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasAnyAuthority('user:list','admin')")
     public ResponseEntity<Object> queryUser(UserQueryCriteria userQueryCriteria, Pageable pageable) {
-        return new ResponseEntity<>(userService.queryAll(userQueryCriteria,pageable), HttpStatus.OK);
+        return new ResponseEntity<>(userService.queryAll(userQueryCriteria, pageable), HttpStatus.OK);
     }
 
     @ApiOperation("新增用户")
     @PostMapping
     @PreAuthorize("hasAnyAuthority('user:add','admin')")
-    public ResponseEntity<Object> createUser(@Validated @RequestBody User resources){
+    public ResponseEntity<Object> createUser(@Validated @RequestBody User resources) {
         checkLevel(resources);
         // 默认密码 123456
         resources.setPassword(passwordEncoder.encode("123456"));
@@ -47,13 +47,23 @@ public class UserController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
+    @ApiOperation("修改用户")
+    @PutMapping
+    @PreAuthorize("hasAnyAuthority('user:edit','admin')")
+    public ResponseEntity<Object> updateUser(@Validated(User.Update.class) @RequestBody User resources) throws Exception {
+        checkLevel(resources);
+        userService.update(resources);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
     /**
      * 如果当前用户的角色级别低于创建用户的角色级别，则抛出权限不足的错误
+     *
      * @param resources /
      */
     private void checkLevel(User resources) {
         //当前登陆用户的角色级别
-        Integer currentLevel =  Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId()).stream().map(RoleSmallDto::getLevel).collect(Collectors.toList()));
+        Integer currentLevel = Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId()).stream().map(RoleSmallDto::getLevel).collect(Collectors.toList()));
         //新用户的角色级别
         Integer optLevel = roleService.findByRoles(resources.getRoles());
         //level 1是最高级别，数字越大级别越低

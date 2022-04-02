@@ -8,6 +8,7 @@ import com.jeff.service.dto.UserQueryCriteria;
 import com.jeff.service.mapstruct.UserMapper;
 import com.jeff.utils.PageUtil;
 import com.jeff.utils.QueryHelp;
+import com.jeff.utils.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,6 +56,35 @@ public class UserServiceImpl implements UserService {
             throw new EntityExistException(User.class, "phone", resources.getPhone());
         }
         userRepository.save(resources);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void update(User resources) {
+        User user = userRepository.findById(resources.getId()).orElseGet(User::new);
+        ValidationUtil.isNull(user.getId(), "User", "id", resources.getId());
+        User user1 = userRepository.findByUsername(resources.getUsername());
+        User user2 = userRepository.findByEmail(resources.getEmail());
+        User user3 = userRepository.findByPhone(resources.getPhone());
+        if (user1 != null && !user.getId().equals(user1.getId())) {
+            throw new EntityExistException(User.class, "username", resources.getUsername());
+        }
+        if (user2 != null && !user.getId().equals(user2.getId())) {
+            throw new EntityExistException(User.class, "email", resources.getEmail());
+        }
+        if (user3 != null && !user.getId().equals(user3.getId())) {
+            throw new EntityExistException(User.class, "phone", resources.getPhone());
+        }
+        user.setUsername(resources.getUsername());
+        user.setEmail(resources.getEmail());
+        user.setEnabled(resources.getEnabled());
+        user.setRoles(resources.getRoles());
+        user.setDept(resources.getDept());
+        user.setJobs(resources.getJobs());
+        user.setPhone(resources.getPhone());
+        user.setNickName(resources.getNickName());
+        user.setGender(resources.getGender());
+        userRepository.save(user);
     }
 
 }
