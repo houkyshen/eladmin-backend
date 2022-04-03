@@ -96,4 +96,11 @@ public class AuthorizationController {
         }};
         return ResponseEntity.ok(imgResult);
     }
+
+    @ApiOperation("退出登录")
+    @DeleteMapping(value = "/logout")
+    public ResponseEntity<Object> logout(HttpServletRequest request) {
+        onlineUserService.logout(tokenProvider.getToken(request));
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

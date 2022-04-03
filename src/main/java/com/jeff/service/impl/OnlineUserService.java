@@ -40,4 +40,13 @@ public class OnlineUserService {
     public JwtUserDto getOne(String key) {
         return (JwtUserDto) redisUtils.get(key);
     }
+
+    /**
+     * 退出登录
+     * @param token /
+     */
+    public void logout(String token) {
+        String key = properties.getOnlineKey() + token;
+        redisUtils.del(key);
+    }
 }
