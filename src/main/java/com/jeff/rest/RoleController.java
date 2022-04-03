@@ -23,7 +23,7 @@ public class RoleController {
 
     @ApiOperation("返回全部的角色")
     @GetMapping(value = "/all")
-    @PreAuthorize("hasAnyAuthority('roles:list','user:add','user:edit','admin')")
+    @PreAuthorize("@el.check('roles:list','user:add','user:edit')")
     public ResponseEntity<Object> queryAllRole(){
         return new ResponseEntity<>(roleService.queryAll(),HttpStatus.OK);
     }

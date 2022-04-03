@@ -10,6 +10,7 @@ import com.jeff.service.dto.small.RoleSmallDto;
 import com.jeff.utils.SecurityUtils;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,14 +33,14 @@ public class UserController {
 
     @ApiOperation("查询用户")
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('user:list','admin')")
+    @PreAuthorize("@el.check('user:list')")
     public ResponseEntity<Object> queryUser(UserQueryCriteria userQueryCriteria, Pageable pageable) {
         return new ResponseEntity<>(userService.queryAll(userQueryCriteria, pageable), HttpStatus.OK);
     }
 
     @ApiOperation("新增用户")
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('user:add','admin')")
+    @PreAuthorize("@el.check('user:add')")
     public ResponseEntity<Object> createUser(@Validated @RequestBody User resources) {
         checkLevel(resources);
         // 默认密码 123456
@@ -50,7 +51,7 @@ public class UserController {
 
     @ApiOperation("修改用户")
     @PutMapping
-    @PreAuthorize("hasAnyAuthority('user:edit','admin')")
+    @PreAuthorize("@el.check('user:edit')")
     public ResponseEntity<Object> updateUser(@Validated(User.Update.class) @RequestBody User resources) throws Exception {
         checkLevel(resources);
         userService.update(resources);
@@ -59,7 +60,7 @@ public class UserController {
 
     @ApiOperation("删除用户")
     @DeleteMapping
-    @PreAuthorize("hasAnyAuthority('user:del','admin')")
+    @PreAuthorize("@el.check('user:del')")
     public ResponseEntity<Object> deleteUser(@RequestBody Set<Long> ids) {
         for (Long id : ids) {
             Integer currentLevel = Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId()).stream().map(RoleSmallDto::getLevel).collect(Collectors.toList()));

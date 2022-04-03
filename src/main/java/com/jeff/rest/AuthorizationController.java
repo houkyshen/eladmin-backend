@@ -2,8 +2,11 @@ package com.jeff.rest;
 
 import cn.hutool.core.util.IdUtil;
 import com.jeff.config.RsaProperties;
+import com.jeff.config.SecurityProperties;
+import com.jeff.config.jwt.TokenProvider;
 import com.jeff.service.dto.AuthUserDto;
 import com.jeff.service.dto.JwtUserDto;
+import com.jeff.service.impl.OnlineUserService;
 import com.jeff.utils.RedisUtils;
 import com.jeff.utils.RsaUtils;
 import com.jeff.utils.SecurityUtils;
@@ -11,6 +14,7 @@ import com.wf.captcha.ArithmeticCaptcha;
 import com.wf.captcha.base.Captcha;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -19,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.apache.commons.lang3.StringUtils;
+
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +35,9 @@ import java.util.concurrent.TimeUnit;
 public class AuthorizationController {
     private final RedisUtils redisUtils;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
+    private final SecurityProperties properties;
+    private final TokenProvider tokenProvider;
+    private final OnlineUserService onlineUserService;
 
     @PostMapping(value = "/login")
     public ResponseEntity<Object> login(@Validated @RequestBody AuthUserDto authUser, HttpServletRequest request) throws Exception {
@@ -54,9 +62,13 @@ public class AuthorizationController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         //4、通过已经认证的Authentication返回UserDetails
         final JwtUserDto jwtUserDto = (JwtUserDto) authentication.getPrincipal();
+        // 生成令牌
+        String token = tokenProvider.createToken(authentication);
+        // 保存在线信息
+        onlineUserService.save(jwtUserDto, token, request);
         //走到这里就代表验证码校验通过了
         Map<String, Object> authInfo = new HashMap<String, Object>(2) {{
-            put("token",  "token");
+            put("token", properties.getTokenStartWith() + token);
             put("user", jwtUserDto);
         }};
         return ResponseEntity.ok(authInfo);

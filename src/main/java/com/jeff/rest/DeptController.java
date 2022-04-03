@@ -26,7 +26,7 @@ public class DeptController {
 
     @ApiOperation("查询部门")
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('user:list','dept:list','admin')")
+    @PreAuthorize("@el.check('user:list','dept:list')")
     public ResponseEntity<Object> queryDept(DeptQueryCriteria criteria) throws Exception {
         List<DeptDto> deptDtos = deptService.queryAll(criteria, true);
         return new ResponseEntity<>(PageUtil.toPage(deptDtos, deptDtos.size()), HttpStatus.OK);
