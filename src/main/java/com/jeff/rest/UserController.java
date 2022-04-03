@@ -19,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -54,6 +55,21 @@ public class UserController {
         checkLevel(resources);
         userService.update(resources);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @ApiOperation("删除用户")
+    @DeleteMapping
+    @PreAuthorize("hasAnyAuthority('user:del','admin')")
+    public ResponseEntity<Object> deleteUser(@RequestBody Set<Long> ids) {
+        for (Long id : ids) {
+            Integer currentLevel = Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId()).stream().map(RoleSmallDto::getLevel).collect(Collectors.toList()));
+            Integer optLevel = Collections.min(roleService.findByUsersId(id).stream().map(RoleSmallDto::getLevel).collect(Collectors.toList()));
+            if (currentLevel > optLevel) {
+                throw new BadRequestException("角色权限不足，不能删除：" + userService.findById(id).getUsername());
+            }
+        }
+        userService.delete(ids);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     /**

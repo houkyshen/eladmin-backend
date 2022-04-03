@@ -10,11 +10,14 @@ import com.jeff.utils.PageUtil;
 import com.jeff.utils.QueryHelp;
 import com.jeff.utils.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.jeff.exception.EntityExistException;
+
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -35,6 +38,14 @@ public class UserServiceImpl implements UserService {
 //            }
 //        }, pageable);
         return PageUtil.toPage(page.map(userMapper::toDto));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserDto findById(long id) {
+        User user = userRepository.findById(id).orElseGet(User::new);
+        ValidationUtil.isNull(user.getId(), "User", "id", id);
+        return userMapper.toDto(user);
     }
 
     @Override
@@ -87,4 +98,9 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Set<Long> ids) {
+        userRepository.deleteAllByIdIn(ids);
+    }
 }
